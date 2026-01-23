@@ -1,0 +1,7 @@
+{
+  "name": "Gestão de Terceiros Pro",
+  "description": "Controle avançado de entrada e saída com OCR e sincronização via Google Sheets.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
