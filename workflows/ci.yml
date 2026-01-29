@@ -1,1 +1,72 @@
+name: CI
 
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Prática recomendada: conceder só o necessário por padrão (least privilege)
+# e elevar permissões apenas quando um job/step precisar. 
+# Aqui, leitura de contents é suficiente para checkout/build/test.  [1](https://www.youtube.com/watch?v=HvP5-MCdjL4)
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build, Lint and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Boa prática: não persistir o token no git local do runner.  [2](https://webpeak.org/blog/how-to-add-someone-to-github-repository/)
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies (CI-friendly)
+        run: npm ci
+
+      # Opcional: se você tiver script de checagem de tipos (tsc --noEmit)
+      - name: Type check
+        run: |
+          if npm run | grep -q "typecheck"; then
+            npm run typecheck
+          else
+            echo "No typecheck script, skipping."
+          fi
+
+      - name: Lint
+        run: |
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No lint script, skipping."
+          fi
+
+      - name: Run unit tests
+        run: |
+          if npm run | grep -q "test"; then
+            npm test --if-present -- --ci --reporter=min
+          else
+            echo "No test script, skipping."
+          fi
+
+      - name: Build (Vite)
+        run: |
+          if npm run | grep -q "build"; then
+            npm run build
+          else
+            echo "No build script, skipping."
+          fi
+
+  # Exemplo de job futuro: você pode adicionar análise estática, SCA etc.
+  # codeql:
+  #   uses: ./.github/workflows/codeql.yml
